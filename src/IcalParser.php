@@ -418,6 +418,7 @@ class IcalParser {
                                             $formatedStartDate = $recurDate->format('Ymd\THis');
                                             if($formatedStartDate === $modifiedEventRecurID) {
                                                 unset($this->data[ "VEVENT" ][ $counter ]['RECURRENCES'][$j]);
+                                                $this->data["VEVENT"][$counter]['RECURRENCES'] = array_values($this->data["VEVENT"][$counter]['RECURRENCES']);
                                                 break;
                                             }
                                         }
