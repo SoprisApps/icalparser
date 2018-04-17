@@ -10,6 +10,9 @@ class IcalParser {
 	/** @var \DateTimeZone */
 	public $timezone;
 
+    /** @var array */
+	public $timezonesById;
+
 	/** @var array */
 	public $data;
 
@@ -253,6 +256,8 @@ class IcalParser {
 
 		$counters = [];
 		$section = 'VCALENDAR';
+        $subSectionCounters = [];
+		$subSection = null;
 
 		// Replace \r\n with \n
 		$string = str_replace("\r\n", "\n", $string);
@@ -263,18 +268,36 @@ class IcalParser {
 		foreach (explode("\n", $string) as $row) {
 
 			switch ($row) {
-				case 'BEGIN:DAYLIGHT':
+                case 'BEGIN:VTIMEZONE':
 				case 'BEGIN:VALARM':
-				case 'BEGIN:VTIMEZONE':
 				case 'BEGIN:VFREEBUSY':
 				case 'BEGIN:VJOURNAL':
-				case 'BEGIN:STANDARD':
 				case 'BEGIN:VTODO':
 				case 'BEGIN:VEVENT':
 					$section = substr($row, 6);
 					$counters[$section] = isset($counters[$section]) ? $counters[$section] + 1 : 0;
 					continue 2; // while
 					break;
+
+                case 'BEGIN:STANDARD':
+                case 'BEGIN:DAYLIGHT':
+                    $subSection = substr($row, 6);
+                    continue 2; // while
+                    break;
+
+                case 'END:DAYLIGHT':
+                case 'END:STANDARD':
+                    $subSection = null;
+                    continue 2; // while
+                    break;
+
+                case 'END:VTIMEZONE':
+                    $section = substr($row, 4);
+                    $currCounter = $counters[$section];
+                    $this->parseTimezone($this->data[$section][$currCounter]);
+                    continue 2; // while
+                    break;
+
 				case 'END:VEVENT':
 					$section = substr($row, 4);
 					$currCounter = $counters[$section];
@@ -285,12 +308,9 @@ class IcalParser {
 
 					continue 2; // while
 					break;
-				case 'END:DAYLIGHT':
 				case 'END:VALARM':
-				case 'END:VTIMEZONE':
 				case 'END:VFREEBUSY':
 				case 'END:VJOURNAL':
-				case 'END:STANDARD':
 				case 'END:VTODO':
                     continue 2; // while
                     break;
@@ -315,7 +335,7 @@ class IcalParser {
                     break;
 			}
 
-			list($key, $middle, $value) = $this->parseRow($row);
+			list($key, $middle, $value) = $this->parseRow($row, $section);
 
 
 			if ($callback) {
@@ -333,7 +353,14 @@ class IcalParser {
 						$this->data[$section][$counters[$section]][$arrayKey][] = $value;
 					}
 
-					$this->data[$section][$counters[$section]][$key] = $value;
+					if (empty($subSection)) {
+                        $this->data[$section][$counters[$section]][$key] = $value;
+                    } else {
+					    if (empty($this->data[$section][$counters[$section]][$subSection])) {
+                            $this->data[$section][$counters[$section]][$subSection] = array();
+                        }
+                        $this->data[$section][$counters[$section]][$subSection][$key] = $value;
+                    }
 				}
 
 			}
@@ -346,7 +373,7 @@ class IcalParser {
 	 * @param $row
 	 * @return array
 	 */
-	private function parseRow($row) {
+	private function parseRow($row, $section) {
         preg_match('#^([\w-]+);?([\w-]+="[^"]*"|.*?):(.*)$#i', $row, $matches);
 
 		$key = false;
@@ -366,7 +393,12 @@ class IcalParser {
 				if (isset($this->windows_timezones[$value])) {
 					$value = $this->windows_timezones[$value];
 				}
-				$this->timezone = new \DateTimeZone($value);
+
+				try {
+                    $this->timezone = new \DateTimeZone($value);
+                } catch (\Exception $e) {
+				    // this is a custom timezone and we need to figure it out.
+                }
 			}
 
 			// have some middle part ?
@@ -635,4 +667,29 @@ class IcalParser {
 		return [];
 	}
 
+	private function parseTimezone($tzData) {
+	    $tzId = null;
+	    $mappedTzId = null;
+
+	    if (!empty($tzData['TZID'])) {
+	        $tzId = $tzData['TZID'];
+        } else if (!empty($tzData['X-WR-TIMEZONE'])) {
+            $tzId = $tzData['X-WR-TIMEZONE'];
+        }
+
+        if (isset($this->windows_timezones[$tzId])) {
+            $mappedTzId = $this->windows_timezones[$tzId];
+            $tzInstance = new \DateTimeZone($mappedTzId);
+        } else {
+            try {
+                $tzInstance = new \DateTimeZone($tzId);
+            } catch (\Exception $e) {
+                // this is a custom timezone and we need to figure it out.
+            }
+        }
+
+        if (!empty($tzInstance)) {
+            $this->timezonesById[$tzId] = $tzInstance;
+        }
+    }
 }

@@ -24,3 +24,10 @@ Assert::same('Europe/Paris', $cal->timezone->getName());
 $cal = new \om\IcalParser();
 $results = $cal->parseFile(__DIR__ . '/cal/weird_windows_timezones.ics');
 $events = $cal->getSortedEvents();
+
+$cal = new \om\IcalParser();
+$results = $cal->parseFile(__DIR__ . '/cal/custom_vtimezone_definition.ics');
+$events = $cal->getSortedEvents();
+Assert::same('Microsoft/Custom', $cal->timezone->getName());
+Assert::same('14.11.2017 11:00:00', $events[0]['DTSTART']->format('j.n.Y H:i:s'));
+Assert::same('14.11.2017 14:00:00', $events[0]['END']->format('j.n.Y H:i:s'));
