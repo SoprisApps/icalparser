@@ -170,3 +170,80 @@ Assert::equal($events[1]['DTSTART'], $recurrences[0]);
 Assert::equal('28.8.2017 00:00:00', $recurrences[1]->format('j.n.Y H:i:s'));
 Assert::equal('4.9.2017 00:00:00', $recurrences[2]->format('j.n.Y H:i:s'));
 Assert::equal('11.9.2017 00:00:00', $recurrences[3]->format('j.n.Y H:i:s'));
+
+
+$results = $cal->parseFile(__DIR__ . '/cal/recur_instances_with_modifications_and_bad_sequence_numbers.ics');
+$events = $cal->getSortedEvents(true);
+
+$mainEvent = null;
+$modifiedEvents = array();
+$recurrenceIdsSeen = array();
+foreach($events as $event) {
+    if ($event['UID'] === '5scrglmk8piio60emu8okfbh2h@google.com') {
+        if (!empty($event['RECURRENCES'])) {
+            $mainEvent = $event;
+            // the initial instance...there should be 589 of them (I think)
+            Assert::equal(589, sizeof($event['RECURRENCES']));
+        } else if (!empty($event['RECURRENCE-ID'])) {
+            $recurrenceIdsSeen[$event['RECURRENCE-ID']] = true;
+            $modifiedEvents[] = $event;
+            Assert::true(empty($event['RECURRING']));
+            Assert::true(empty($event['RECURRENCE_INSTANCE']));
+        }
+    }
+}
+foreach($mainEvent['RECURRENCES'] as $recurr) {
+    foreach($modifiedEvents as $mod) {
+        Assert::notEqual($recurr, $mod['DTSTART']);
+    }
+
+}
+
+$recurrenceIdsShouldBeSeen = array(
+    '20190128T153000',
+    '20190129T153000',
+    '20190130T153000',
+    '20190131T153000',
+    '20190201T153000',
+    '20190204T153000',
+    '20190205T153000',
+    '20190206T153000',
+    '20190207T153000',
+    '20190211T153000',
+    '20190212T153000',
+    '20190213T153000',
+    '20190214T153000',
+    '20190219T153000',
+    '20190220T153000',
+    '20190221T153000',
+    '20190225T153000',
+    '20190226T153000',
+    '20190227T153000',
+    '20190228T153000',
+    '20190304T153000',
+    '20190305T153000',
+    '20190306T153000',
+    '20190307T153000',
+    '20190311T153000',
+    '20190312T153000',
+    '20190313T153000',
+    '20190314T153000',
+    '20190315T153000',
+    '20190318T153000',
+    '20190319T153000',
+    '20190320T153000',
+    '20190321T153000',
+    '20190325T153000',
+    '20190326T153000',
+    '20190327T153000',
+    '20190328T153000',
+    '20190329T153000',
+    '20190401T153000',
+    '20190402T153000',
+    '20190403T153000',
+    '20190404T153000',
+);
+print_r($recurrenceIdsSeen);
+foreach($recurrenceIdsShouldBeSeen as $id) {
+    Assert::true(isset($recurrenceIdsSeen[$id]), "Recurrence ID " . $id . " was not seen");
+}

@@ -367,13 +367,21 @@ class IcalParser {
 			    // Supports timezones like:
                 //   America/Los_Angeles
                 //   America/Indiana/Vincennes
-				if (preg_match('#(\w+/\w+(/\w+)?)$#i', $value, $matches)) {
+                //   /mozilla.org/20070129_1/Europe/Paris
+                //   /mozilla.org/20070129_1/Europe/Paris/None
+				if (preg_match('#/[\w.]+/[\w]+/(\w+/\w+(?:/\w+)?)$#i', $value, $matches)) {
 					$value = $matches[1];
 				}
 				if (isset($this->windows_timezones[$value])) {
 					$value = $this->windows_timezones[$value];
 				}
-				$this->timezone = new \DateTimeZone($value);
+
+				try {
+                    $this->timezone = new \DateTimeZone($value);
+                } catch (\Exception $e) {
+				    // if this is an invalid timezone, then fallback to GMT.  This logic may not be right!
+				    $this->timezone = new \DateTimeZone("GMT");
+                }
 			}
 
 			// have some middle part ?
@@ -544,7 +552,7 @@ class IcalParser {
                                 $originalEvent = $this->data[ "VEVENT" ][ $counter ];
                                 if(!empty($originalEvent[ 'RECURRENCES' ]) && isset($originalEvent[ 'SEQUENCE' ])) {
                                     $originalEventSeq = intval($originalEvent['SEQUENCE'], 10);
-                                    if($modifiedEventSeq > $originalEventSeq) {
+                                    if($modifiedEventSeq >= $originalEventSeq) {
                                         for ($j = 0; $j < count($originalEvent['RECURRENCES']); $j++) {
                                             $recurDate = $originalEvent[ 'RECURRENCES' ][$j];
                                             $formatedStartDate = $recurDate->format('Ymd\THis');
