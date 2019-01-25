@@ -569,6 +569,15 @@ class IcalParser {
                                     }
                                 }
                             }
+                        } else if (empty($event['RECURRENCE-ID'])) {
+                            $recurrenceIDDate = $event['DTSTART']->format('Ymd');
+                            $recurrenceIDDateTime = $event['DTSTART']->format('Ymd\THis');
+                            if (isset($this->data['_RECURRENCE_IDS'][$recurrenceIDDate]) ||
+                                isset($this->data['_RECURRENCE_IDS'][$recurrenceIDDateTime])) {
+                                // this handles a case where the event has no recurrences because all of them have been
+                                // edited, but the original event still remains
+                                $event = null;
+                            }
                         }
 
                         if(!empty($event)) {

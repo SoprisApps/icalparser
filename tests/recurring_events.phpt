@@ -171,6 +171,15 @@ Assert::equal('28.8.2017 00:00:00', $recurrences[1]->format('j.n.Y H:i:s'));
 Assert::equal('4.9.2017 00:00:00', $recurrences[2]->format('j.n.Y H:i:s'));
 Assert::equal('11.9.2017 00:00:00', $recurrences[3]->format('j.n.Y H:i:s'));
 
+// This test handles a case where there is a main, repeating event that has that recurs one more time after the main
+// event.  Both the main event and the additional recurrence have been edited and have new, individual entries.
+$results = $cal->parseFile(__DIR__ . '/cal/recur_instances_with_modifications2.ics');
+$events = $cal->getSortedEvents(true);
+Assert::count(2, $events, "A ghost event is either present or there is an event missing");
+foreach($events as $event) {
+    Assert::true(isset($event['RECURRENCE-ID']), "This event is missing a RECURRENCE-ID");
+    Assert::false(isset($event['RECURRENCES']), "This event has recurrences and shouldn't");
+}
 
 $results = $cal->parseFile(__DIR__ . '/cal/recur_instances_with_modifications_and_bad_sequence_numbers.ics');
 $events = $cal->getSortedEvents(true);
@@ -243,7 +252,8 @@ $recurrenceIdsShouldBeSeen = array(
     '20190403T153000',
     '20190404T153000',
 );
-print_r($recurrenceIdsSeen);
 foreach($recurrenceIdsShouldBeSeen as $id) {
     Assert::true(isset($recurrenceIdsSeen[$id]), "Recurrence ID " . $id . " was not seen");
 }
+
+
