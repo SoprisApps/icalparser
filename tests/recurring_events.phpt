@@ -191,8 +191,8 @@ foreach($events as $event) {
     if ($event['UID'] === '5scrglmk8piio60emu8okfbh2h@google.com') {
         if (!empty($event['RECURRENCES'])) {
             $mainEvent = $event;
-            // the initial instance...there should be 731 of them (I think)
-            Assert::equal(731, sizeof($event['RECURRENCES']));
+            // the initial instance...there should be 734 of them (I think)
+            Assert::equal(734, sizeof($event['RECURRENCES']));
         } else if (!empty($event['RECURRENCE-ID'])) {
             $recurrenceIdsSeen[$event['RECURRENCE-ID']] = true;
             $modifiedEvents[] = $event;
