@@ -46,13 +46,14 @@ class Freq
     /**
      * Constructs a new Freqency-rule
      * @param $rule string
-     * @param $start int Unix-timestamp (important : Need to be the start of Event)
+     * @param $start DateTime (important : Need to be the start of Event)
      * @param $excluded array of int (timestamps), see EXDATE documentation
      * @param $added array of int (timestamps), see RDATE documentation
      */
     public function __construct( $rule, $start, $excluded=array(), $added=array())
     {
-        $this->start = $start;
+        $this->start = $start->getTimestamp();
+        $this->start_obj = $start;
         $this->excluded = array();
 
         $rules = array();
@@ -267,7 +268,25 @@ class Freq
             return $ts;
         }
 
+        $tz = $this->start_obj->getTimezone();
+        if($tz === FALSE) {
+            $tz = new \DateTimeZone("UTC");
+        }
+
+        //EOP needs to have the same TIME as START ($t), see https://github.com/OzzyCzech/icalparser/issues/31
+        $tO = new \DateTime('@'.$t);
+        $tO->setTimezone($tz);
+
         $eop = $this->findEndOfPeriod($offset);
+
+        $eopO = new \DateTime('@'.$eop);
+        $eopO->setTimezone($tz);
+        $eopO->setTime($tO->format('H'),$tO->format('i'),$tO->format('s'));
+        $eop = $eopO->getTimestamp();
+        unset($eopO);
+        unset($tO);
+        unset($tz);
+
         if($debug) echo 'EOP: ' . date('r', $eop) . "\n";
 
         foreach ($this->knownRules AS $rule) {

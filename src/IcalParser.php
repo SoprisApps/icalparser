@@ -506,7 +506,7 @@ class IcalParser {
 		}
 
 		date_default_timezone_set($event['DTSTART']->getTimezone()->getName());
-		$frequency = new Freq($recurring->rrule, $event['DTSTART']->getTimestamp(), $exclusions, $additions);
+		$frequency = new Freq($recurring->rrule, $event['DTSTART'], $exclusions, $additions);
 		$recurrenceTimestamps = $frequency->getAllOccurrences();
 		$recurrences = array();
 		foreach($recurrenceTimestamps as $recurrenceTimestamp) {
