@@ -149,17 +149,6 @@ foreach($trueEvents as $index => $trueEvent) {
     Assert::equal($trueEvent['DTSTART']->format("Ymd"), $events[$index]['DTSTART']->format("Ymd"));
 }
 
-/*
-// There is still an issue that needs to be resolved when modifications are made to the initial event that is the
-// base of the recurrences.  The below ICS file has a great edge case example: one event, no recurrences in the
-// recurring ruleset, and a modification to the initial event.
-$results = $cal->parseFile(__DIR__ . '/cal/recur_instances_with_modifications_to_first_day.ics');
-$events = $cal->getSortedEvents();
-Assert::true(empty($events[0]['RECURRENCES'])); // edited event
-Assert::true(empty($events[1]['RECURRENCES'])); // recurring event base with no recurrences
-Assert::equal(1, count($events));
-*/
-
 $results = $cal->parseFile(__DIR__ . '/cal/daily_recur.ics');
 $events = $cal->getSortedEvents();
 

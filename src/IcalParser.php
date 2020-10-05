@@ -577,6 +577,10 @@ class IcalParser {
                                 // this handles a case where the event has no recurrences because all of them have been
                                 // edited, but the original event still remains
                                 $event = null;
+                            } else if(!empty($event[ 'RRULE' ]) || !empty($event[ 'RDATE' ])) {
+                                // This was an unmodified, recurring event that was excluded from the
+                                // recurring events based on some rule (i.e. EXDATE).
+                                $event = null;
                             }
                         }
 
@@ -588,10 +592,10 @@ class IcalParser {
 						$event['RECURRING'] = true;
 						$eventInterval = $event['DTSTART']->diff($event['DTEND']);
 
-						$firstEvent = true;
 						foreach($recurrences as $j => $recurDate) {
 							$newEvent = $event;
-							if(!$firstEvent) {
+							// DateTime inequality must be determined with != instead of !==
+							if ($recurDate != $event['DTSTART']) {
 								unset($newEvent['RECURRENCES']);
 								$newEvent['DTSTART'] = $recurDate;
 								$newEvent['DTEND'] = clone($recurDate);
@@ -600,7 +604,6 @@ class IcalParser {
 
 							$newEvent['RECURRENCE_INSTANCE'] = $j;
 							$events[] = $newEvent;
-							$firstEvent = false;
 						}
 					}
 				}
